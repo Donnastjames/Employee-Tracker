@@ -29,34 +29,64 @@ const runQuery = () => {
       choices: [
         'View All Employees',
         'View All Employees By Department',
-        'View All Employees By Manager',
+        // 'View All Employees By Manager',
         'Add Employee',
+        // 'Remove Employee',
         'Update Employee Role',
+        // 'Update Employee Manager',
         'View All Roles',
+        'Add Role',
+        // 'Remove Role',
         'View All Departments',
+        'Add Department',
+        // 'Remove Department',
         'Exit',
       ],
     })
-    .then((answer) => {
+    .then(answer => {
       switch (answer.action) {
         case 'Add Employee':
-          addEmployee();
+          // addEmployee();
+          break;
+        case 'Add Department':
+          addDepartment();
           break;
         case 'Exit':
-          // TODO: Something that exits the app.
+          connection.end();
+          break;
+        default:
+          console.error(`Invalid action: "${answer.action}"`);
       }
     });
-};
-
-const managerSearch = () => {
-  const query = 
-    'SELECT * FROM employee WHERE manager_id IS NOT NULL';
-  connection.query(query, (err, res) => {
-    if (err) throw err;
-    res(employee) => {console.log }
-    
-  });
 }
+
+
+const addDepartment = () => {
+  inquirer
+    .prompt({
+      name: 'department',
+      type: 'input',
+      message: 'What is the department name?',
+    })
+    .then(answer => {
+      const query =
+        `INSERT INTO department (name) VALUE ("${answer.department}");`
+      connection.query(query, (err, res) => {
+        if (err) throw err;
+        runQuery();
+      });
+    });
+}
+
+// const managerSearch = () => {
+//   const query = 
+//     'SELECT * FROM employee WHERE manager_id IS NOT NULL';
+//   connection.query(query, (err, res) => {
+//     if (err) throw err;
+//     res(employee) => {console.log }
+//    
+//   });
+// }
 
 const addEmployee = () => {
   inquirer
@@ -93,7 +123,7 @@ const addEmployee = () => {
       },
     ).then((answers) => {
       const choices = 'SELECT first_name, last_name, role_id FROM employee FULL JOIN role on employee.id = role.id';
-      connection.choices(choices, [answer.first_name, answer.last_name, answer.role_id, answer.title, answer.salary], (err,res) => {
+      connection.query(choices, [answer.first_name, answer.last_name, answer.role_id, answer.title, answer.salary], (err,res) => {
         if (err) throw err;
         res.forEach(({ 
 
