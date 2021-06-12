@@ -48,6 +48,9 @@ const runQuery = () => {
         case 'Add Employee':
           // addEmployee();
           break;
+        case 'View All Departments':
+          viewAllDepartments();
+          break;
         case 'Add Department':
           addDepartment();
           break;
@@ -60,6 +63,15 @@ const runQuery = () => {
     });
 }
 
+const viewAllDepartments = () => {
+  const query =
+    `SELECT * FROM department`;
+  connection.query(query, (err, res) => {
+    if (err) throw err;
+    console.table(res);
+    runQuery();
+  })
+}
 
 const addDepartment = () => {
   inquirer
