@@ -48,6 +48,9 @@ const runQuery = () => {
         case 'Add Employee':
           // addEmployee();
           break;
+        case 'Add Role':
+          addRole();
+          break; 
         case 'View All Departments':
           viewAllDepartments();
           break;
@@ -61,6 +64,45 @@ const runQuery = () => {
           console.error(`Invalid action: "${answer.action}"`);
       }
     });
+}
+
+const addRole = () => {
+  let query =
+    `SELECT id, name FROM department`;
+  connection.query(query, (err, departments) => {
+    if (err) throw err;
+    inquirer.prompt([
+      {
+        name: 'title',
+        type: 'input',
+        message: 'What is the title of this new role?',
+      },
+      {
+        name: 'salary',
+        type: 'number',
+        message: 'What is the salary for this role?',
+      },
+      {
+        name: 'department',
+        type: 'rawlist',
+        message: 'This role goes with which department?',
+        choices: departments.map(department => department.name),
+      }])
+    .then(answer => {
+      // Get the department id from the department name ...
+      const index = departments.findIndex(department => department.name === answer.department);
+      if (index < 0) throw new Error(`No departments matched: "${answer.department}"`);
+      const departmentId = departments[index].id;
+
+      query =
+        `INSERT INTO \`role\` (title, salary, department_id) ` +
+        `VALUES ("${answer.title}", ${answer.salary}, ${departmentId})`;
+      connection.query(query, err => {
+        if (err) throw err;
+        runQuery();
+      });
+    });
+  });
 }
 
 const viewAllDepartments = () => {
