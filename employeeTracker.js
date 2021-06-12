@@ -84,23 +84,24 @@ const addRole = () => {
     `SELECT id, name FROM department`;
   connection.query(query, (err, departments) => {
     if (err) throw err;
-    inquirer.prompt([
-      {
-        name: 'title',
-        type: 'input',
-        message: 'What is the title of this new role?',
-      },
-      {
-        name: 'salary',
-        type: 'number',
-        message: 'What is the salary for this role?',
-      },
-      {
-        name: 'department',
-        type: 'rawlist',
-        message: 'This role goes with which department?',
-        choices: departments.map(department => department.name),
-      }])
+    inquirer
+      .prompt([
+        {
+          name: 'title',
+          type: 'input',
+          message: 'What is the title of this new role?',
+        },
+        {
+          name: 'salary',
+          type: 'number',
+          message: 'What is the salary for this role?',
+        },
+        {
+          name: 'department',
+          type: 'rawlist',
+          message: 'This role goes with which department?',
+          choices: departments.map(department => department.name),
+        }])
     .then(answer => {
       // Get the department id from the department name ...
       const index = departments.findIndex(department => department.name === answer.department);
@@ -156,45 +157,73 @@ const addDepartment = () => {
 // }
 
 const addEmployee = () => {
-  inquirer
-    .prompt([
+  let query = 
+    'SELECT id, title FROM `role`';
+  connection.query(query, (err, roles) => {
+    if (err) throw err;
+    inquirer.prompt([
       {
-        name: 'first_name',
+        name: 'firstName',
         type: 'input',
         message: `What is the employee's first name?`,
       },
       {
-        name: 'last_name',
+        name: 'lastName',
         type: 'input',
         message: `What is the employee's last name?`,
       },
       {
-        name: 'role_id',
+        name: 'role',
         type: 'rawlist',
         message: `What is the employee's role?`,
-        // TODO: Something similar to addRole() to populate these choices ...
-        choices: [
-          'Sales Lead',
-          'Sales Person',
-          'Lead Engineer',
-          'Software Engineer',
-          'Account Manager',
-          'Accountant',
-          'Legal Team Lead',
-          'Lawyer',
-        ],
-      }
-    ])
-    .then(answers => {
-      const choices = 'SELECT first_name, last_name, role_id FROM employee FULL JOIN role on employee.id = role.id';
-      connection.query(choices, [answer.first_name, answer.last_name, answer.role_id, answer.title, answer.salary], (err,res) => {
-        if (err) throw err;
-        res.forEach(({ 
-
-        }))
-      } )
+        choices: roles.map(role => role.title),
+          // 'Sales Lead',
+          // 'Sales Person',
+          // 'Lead Engineer',
+          // 'Software Engineer',
+          // 'Account Manager',
+          // 'Accountant',
+          // 'Legal Team Lead',
+          // 'Lawyer',
+      }])
+      .then(answer => {
+        // Get the role id from the role name ...
+        const index = roles.findIndex(role => role.title === answer.role);
+        if (index < 0) throw new Error(`No roles matched: "${answer.role}"`);
+        const roleId = roles[index].id;
+        addEmployeeWithNameAndRoleId(answer.firstName, answer.lastName, roleId);
+      });
     });
-}
+  }
+
+const addEmployeeWithNameAndRoleId = (firstName, lastName, roleId) => {
+  let query = 
+    "SELECT id, CONCAT(`first_name`, ' ', `last_name`) as full_name FROM employee;";
+  connection.query(query, (err, managers) => {
+    if (err) throw err;
+    managers.unshift({ id: null, full_name: 'None'});
+    inquirer.prompt([
+      {
+        name: 'manager',
+        type: 'rawlist',
+        message: `Who is the employee's manager?`,
+        choices: managers.map(manager => manager.full_name),
+      }])
+      .then(answer => {
+        // Get the manager id from the manager's full name ...
+        const index = managers.findIndex(manager => manager.full_name === answer.manager);
+        if (index < 0) throw new Error(`No managers matched: "${answer.manager}"`);
+        const managerId = managers[index].id;
+        query =
+          `INSERT INTO employee (first_name, last_name, role_id, manager_id) ` +
+          `VALUES ("${firstName}", "${lastName}", ${roleId}, ${managerId})`;
+        connection.query(query, err => {
+          if (err) throw err;
+          runQuery();
+        });
+      });
+    });
+  }
 
 const getManagers = () => {
   const choices = employeeDB.managerSearch();
