@@ -46,7 +46,7 @@ const runQuery = () => {
     .then(answer => {
       switch (answer.action) {
         case 'Add Employee':
-          // addEmployee();
+          addEmployee();
           break;
         case 'View All Roles':
           viewAllRoles();
@@ -157,11 +157,11 @@ const addDepartment = () => {
 
 const addEmployee = () => {
   inquirer
-    .prompt(
+    .prompt([
       {
-      name: 'first_name',
-      type: 'input',
-      message: `What is the employee's first name?`,
+        name: 'first_name',
+        type: 'input',
+        message: `What is the employee's first name?`,
       },
       {
         name: 'last_name',
@@ -172,6 +172,7 @@ const addEmployee = () => {
         name: 'role_id',
         type: 'rawlist',
         message: `What is the employee's role?`,
+        // TODO: Something similar to addRole() to populate these choices ...
         choices: [
           'Sales Lead',
           'Sales Person',
@@ -182,13 +183,9 @@ const addEmployee = () => {
           'Legal Team Lead',
           'Lawyer',
         ],
-      },
-      {
-        name: 'salary',
-        type: 'input',
-        message: `What is the employee's salary?`,
-      },
-    ).then((answers) => {
+      }
+    ])
+    .then(answers => {
       const choices = 'SELECT first_name, last_name, role_id FROM employee FULL JOIN role on employee.id = role.id';
       connection.query(choices, [answer.first_name, answer.last_name, answer.role_id, answer.title, answer.salary], (err,res) => {
         if (err) throw err;
