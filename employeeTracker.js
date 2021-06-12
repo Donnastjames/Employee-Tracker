@@ -48,6 +48,9 @@ const runQuery = () => {
         case 'Add Employee':
           // addEmployee();
           break;
+        case 'View All Roles':
+          viewAllRoles();
+          break;
         case 'Add Role':
           addRole();
           break; 
@@ -64,6 +67,16 @@ const runQuery = () => {
           console.error(`Invalid action: "${answer.action}"`);
       }
     });
+}
+
+const viewAllRoles = () => {
+  const query =
+    'SELECT * FROM `role`';
+  connection.query(query, (err, res) => {
+    if (err) throw err;
+    console.table(res);
+    runQuery();
+  })
 }
 
 const addRole = () => {
