@@ -28,7 +28,7 @@ const runQuery = () => {
       message: 'What would you like to do?',
       choices: [
         'View All Employees',
-        'View All Employees By Department',
+        // 'View All Employees By Department',
         // 'View All Employees By Manager',
         'Add Employee',
         // 'Remove Employee',
@@ -45,6 +45,9 @@ const runQuery = () => {
     })
     .then(answer => {
       switch (answer.action) {
+        case 'View All Employees':
+          viewAllEmployees();
+          break;
         case 'Add Employee':
           addEmployee();
           break;
@@ -146,15 +149,26 @@ const addDepartment = () => {
     });
 }
 
-// const managerSearch = () => {
-//   const query = 
-//     'SELECT * FROM employee WHERE manager_id IS NOT NULL';
-//   connection.query(query, (err, res) => {
-//     if (err) throw err;
-//     res(employee) => {console.log }
-//    
-//   });
-// }
+const viewAllEmployees = () => {
+  const query =
+    "SELECT " +
+      "e.first_name, " +
+      "e.last_name, " +
+      "r.title AS `role`, " +
+      "r.salary, " +
+      "d.name AS `department`, " +
+      "CONCAT(m.first_name, ' ', m.last_name) as manager " +
+    "FROM employee AS e " +
+      // Had to use LEFT OUTER JOIN to also show employees with no managers ...
+      "LEFT OUTER JOIN employee AS m ON e.manager_id = m.id " +
+      "INNER JOIN `role` AS r ON e.role_id = r.id " +
+      "INNER JOIN department AS d ON r.department_id = d.id;"
+  connection.query(query, (err, res) => {
+    if (err) throw err;
+    console.table(res);
+    runQuery();
+  })
+}
 
 const addEmployee = () => {
   let query = 
