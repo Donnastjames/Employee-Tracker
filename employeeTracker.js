@@ -43,33 +43,36 @@ const runQuery = () => {
         'Exit',
       ],
     })
-    .then(answer => {
-      switch (answer.action) {
-        case 'View All Employees':
-          viewAllEmployees();
-          break;
-        case 'Add Employee':
-          addEmployee();
-          break;
-        case 'View All Roles':
-          viewAllRoles();
-          break;
-        case 'Add Role':
-          addRole();
-          break; 
-        case 'View All Departments':
-          viewAllDepartments();
-          break;
-        case 'Add Department':
-          addDepartment();
-          break;
-        case 'Exit':
-          connection.end();
-          break;
-        default:
-          console.error(`Invalid action: "${answer.action}"`);
-      }
-    });
+  .then(answer => {
+    switch (answer.action) {
+      case 'View All Employees':
+        viewAllEmployees();
+        break;
+      case 'Add Employee':
+        addEmployee();
+        break;
+      case 'Update Employee Role':
+        updateEmployeeRole();
+        break;
+      case 'View All Roles':
+        viewAllRoles();
+        break;
+      case 'Add Role':
+        addRole();
+        break; 
+      case 'View All Departments':
+        viewAllDepartments();
+        break;
+      case 'Add Department':
+        addDepartment();
+        break;
+      case 'Exit':
+        connection.end();
+        break;
+      default:
+        console.error(`Invalid action: "${answer.action}"`);
+    }
+  });
 }
 
 const viewAllRoles = () => {
@@ -139,14 +142,14 @@ const addDepartment = () => {
       type: 'input',
       message: 'What is the department name?',
     })
-    .then(answer => {
-      const query =
-        `INSERT INTO department (name) VALUE ("${answer.department}");`
-      connection.query(query, (err, res) => {
-        if (err) throw err;
-        runQuery();
-      });
+  .then(answer => {
+    const query =
+      `INSERT INTO department (name) VALUE ("${answer.department}");`
+    connection.query(query, (err, res) => {
+      if (err) throw err;
+      runQuery();
     });
+  });
 }
 
 const viewAllEmployees = () => {
@@ -200,15 +203,15 @@ const addEmployee = () => {
           // 'Legal Team Lead',
           // 'Lawyer',
       }])
-      .then(answer => {
-        // Get the role id from the role name ...
-        const index = roles.findIndex(role => role.title === answer.role);
-        if (index < 0) throw new Error(`No roles matched: "${answer.role}"`);
-        const roleId = roles[index].id;
-        addEmployeeWithNameAndRoleId(answer.firstName, answer.lastName, roleId);
-      });
+    .then(answer => {
+      // Get the role id from the role name ...
+      const index = roles.findIndex(role => role.title === answer.role);
+      if (index < 0) throw new Error(`No roles matched: "${answer.role}"`);
+      const roleId = roles[index].id;
+      addEmployeeWithNameAndRoleId(answer.firstName, answer.lastName, roleId);
     });
-  }
+  });
+};
 
 const addEmployeeWithNameAndRoleId = (firstName, lastName, roleId) => {
   let query = 
@@ -223,21 +226,79 @@ const addEmployeeWithNameAndRoleId = (firstName, lastName, roleId) => {
         message: `Who is the employee's manager?`,
         choices: managers.map(manager => manager.full_name),
       }])
-      .then(answer => {
-        // Get the manager id from the manager's full name ...
-        const index = managers.findIndex(manager => manager.full_name === answer.manager);
-        if (index < 0) throw new Error(`No managers matched: "${answer.manager}"`);
-        const managerId = managers[index].id;
-        query =
-          `INSERT INTO employee (first_name, last_name, role_id, manager_id) ` +
-          `VALUES ("${firstName}", "${lastName}", ${roleId}, ${managerId})`;
-        connection.query(query, err => {
-          if (err) throw err;
-          runQuery();
-        });
+    .then(answer => {
+      // Get the manager id from the manager's full name ...
+      const index = managers.findIndex(manager => manager.full_name === answer.manager);
+      if (index < 0) throw new Error(`No managers matched: "${answer.manager}"`);
+      const managerId = managers[index].id;
+      query =
+        `INSERT INTO employee (first_name, last_name, role_id, manager_id) ` +
+        `VALUES ("${firstName}", "${lastName}", ${roleId}, ${managerId})`;
+      connection.query(query, err => {
+        if (err) throw err;
+        runQuery();
       });
     });
-  }
+  });
+}
+
+const updateEmployeeRole = () => {
+  let query =
+    "SELECT id, CONCAT(`first_name`, ' ', `last_name`) as full_name FROM employee;"
+  connection.query(query, (err, employees) => {
+    if (err) throw err;
+    inquirer.prompt([
+      {
+        name: 'employee',
+        type: 'rawlist',
+        message: 'Select the employee you would like to update: ',
+        choices: employees.map(employee => employee.full_name),
+      }])
+    .then(answer => {
+      const index = employees.findIndex(employee => employee.full_name === answer.employee);
+      if (index < 0) throw new Error(`No employees matched: "${answer.employee}"`);
+      const employeeId = employees[index].id;
+      updateEmployeeRoleWithId(employeeId);
+    });
+  });
+};
+
+const updateEmployeeRoleWithId = employeeId => {
+  // Consolidate code that gets available roles ...
+  let query =
+    'SELECT id, title FROM `role`';
+  connection.query(query, (err, roles) => {
+    if (err) throw err;
+    inquirer.prompt([
+      {
+        name: 'role',
+        type: 'rawlist',
+        message: `What is the employee's new role?`,
+        choices: roles.map(role => role.title),
+          // 'Sales Lead',
+          // 'Sales Person',
+          // 'Lead Engineer',
+          // 'Software Engineer',
+          // 'Account Manager',
+          // 'Accountant',
+          // 'Legal Team Lead',
+          // 'Lawyer',
+      }])
+    .then(answer => {
+      // Get the role id from the role name ...
+      const index = roles.findIndex(role => role.title === answer.role);
+      if (index < 0) throw new Error(`No roles matched: "${answer.role}"`);
+      const roleId = roles[index].id;
+      query =
+        `UPDATE employee SET role_id = ${roleId} WHERE id = ${employeeId}`;
+      connection.query(query, (err, roles) => {
+        if (err) throw err;
+        runQuery();
+      })
+    });
+  });
+};
+
 
 const getManagers = () => {
   const choices = employeeDB.managerSearch();
