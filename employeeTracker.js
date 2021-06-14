@@ -328,12 +328,15 @@ const updateEmployeeManagerWithId = employeeId => {
     "SELECT id, CONCAT(`first_name`, ' ', `last_name`) as full_name FROM employee;";
   connection.query(query, (err, managers) => {
     if (err) throw err;
+    // Don't allow setting an employee to be one's own manager, because that's weird ...
+    managers = managers.filter(manager => manager.id !== employeeId);
+    // Do allow setting an employee's manager to null / None ...
     managers.unshift({ id: null, full_name: 'None'});
     inquirer.prompt([
       {
         name: 'manager',
         type: 'rawlist',
-        message: `Who is the employee's manager?`,
+        message: `Who is the employee's new manager?`,
         choices: managers.map(manager => manager.full_name),
       }])
     .then(answer => {
