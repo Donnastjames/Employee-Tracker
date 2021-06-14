@@ -33,7 +33,7 @@ const runQuery = () => {
         'Add Employee',
         // 'Remove Employee',
         'Update Employee Role',
-        // 'Update Employee Manager',
+        'Update Employee Manager',
         'View All Roles',
         'Add Role',
         // 'Remove Role',
@@ -53,6 +53,9 @@ const runQuery = () => {
         break;
       case 'Update Employee Role':
         updateEmployeeRole();
+        break;
+      case 'Update Employee Manager':
+        updateEmployeeManager();
         break;
       case 'View All Roles':
         viewAllRoles();
@@ -291,13 +294,62 @@ const updateEmployeeRoleWithId = employeeId => {
       const roleId = roles[index].id;
       query =
         `UPDATE employee SET role_id = ${roleId} WHERE id = ${employeeId}`;
-      connection.query(query, (err, roles) => {
+      connection.query(query, err => {
         if (err) throw err;
         runQuery();
       })
     });
   });
 };
+
+const updateEmployeeManager = () => {
+  const query =
+    "SELECT id, CONCAT(`first_name`, ' ', `last_name`) as full_name FROM employee;"
+  connection.query(query, (err, employees) => {
+    if (err) throw err;
+    inquirer.prompt([
+      {
+        name: 'employee',
+        type: 'rawlist',
+        message: 'Select the employee you would like to update: ',
+        choices: employees.map(employee => employee.full_name),
+      }])
+    .then(answer => {
+      const index = employees.findIndex(employee => employee.full_name === answer.employee);
+      if (index < 0) throw new Error(`No employees matched: "${answer.employee}"`);
+      const employeeId = employees[index].id;
+      updateEmployeeManagerWithId(employeeId);
+    });
+  });
+};
+
+const updateEmployeeManagerWithId = employeeId => {
+  let query = 
+    "SELECT id, CONCAT(`first_name`, ' ', `last_name`) as full_name FROM employee;";
+  connection.query(query, (err, managers) => {
+    if (err) throw err;
+    managers.unshift({ id: null, full_name: 'None'});
+    inquirer.prompt([
+      {
+        name: 'manager',
+        type: 'rawlist',
+        message: `Who is the employee's manager?`,
+        choices: managers.map(manager => manager.full_name),
+      }])
+    .then(answer => {
+      // Get the manager id from the manager's full name ...
+      const index = managers.findIndex(manager => manager.full_name === answer.manager);
+      if (index < 0) throw new Error(`No managers matched: "${answer.manager}"`);
+      const managerId = managers[index].id;
+      query =
+        `Update employee SET manager_id = ${managerId} WHERE id = ${employeeId}`;
+      connection.query(query, err => {
+        if (err) throw err;
+        runQuery();
+      });
+    });
+  });
+}
 
 
 const getManagers = () => {
