@@ -31,7 +31,7 @@ const runQuery = () => {
         'View All Employees By Department',
         'View All Employees By Manager',
         'Add Employee',
-        // 'Remove Employee',
+        'Remove Employee',
         'Update Employee Role',
         'Update Employee Manager',
         'View All Roles',
@@ -56,6 +56,9 @@ const runQuery = () => {
         break;
       case 'Add Employee':
         addEmployee();
+        break;
+      case 'Remove Employee':
+        removeEmployee();
         break;
       case 'Update Employee Role':
         updateEmployeeRole();
@@ -253,50 +256,95 @@ const addEmployeeWithNameAndRoleId = (firstName, lastName, roleId) => {
       });
     });
   });
-}
+};
+
+const removeEmployee = () => {
+  const query =
+    "SELECT id, CONCAT(`first_name`, ' ', `last_name`) AS full_name FROM employee;";
+  connection.query(query, (err, employees) => {
+    if (err) throw err;
+    inquirer.prompt([
+      {
+        name: 'employee',
+        type: 'rawlist',
+        message: 'Select the employee you would like to remove: ',
+        choices: employees.map(employee => employee.full_name),
+      }])
+    .then(choice => {
+      const index = employees.findIndex(employee => employee.full_name === choice.employee);
+      if (index < 0) throw new Error(`No employees matched: "${choice.employee}"`);
+      const employeeId = employees[index].id;
+      const employeeFullName = employees[index].full_name;
+      removeEmployeeIfNotManager(employeeId, employeeFullName);
+    });
+  });
+};
+
+const removeEmployeeIfNotManager = (employeeId, employeeFullName) => {
+  let query =
+    "SELECT " +
+      "CONCAT(`first_name`, ' ', `last_name`) AS full_name " +
+      "FROM employee " +
+      `WHERE manager_id = ${employeeId}`;
+  connection.query(query, (err, directReports) => {
+    if (directReports.length > 0) {
+      console.log(
+        `Cannot remove because "${employeeFullName}" ` +
+        `is a manager of these other employees:`);
+      console.table(directReports);
+    } else {
+      query =
+        `DELETE FROM employee WHERE id = ${employeeId}`;
+      connection.query(query, err => {
+        if (err) throw err;
+      });
+    }
+    runQuery();
+  });
+};
 
 const viewAllEmployeesByDepartment = () => {
   const query = 
-  "SELECT " +
-    "d.name AS `department`, " +
-    "e.first_name, " +
-    "e.last_name, " +
-    "r.title AS `role`, " +
-    "r.salary, " + 
-    "CONCAT(m.first_name, ' ', m.last_name) AS manager " +
-  "FROM employee AS e " + 
-    "LEFT OUTER JOIN employee AS m ON e.manager_id = m.id " +
-    "INNER JOIN `role` AS r ON e.role_id = r.id " +
-    "INNER JOIN department AS d ON r.department_id = d.id " +
-  "ORDER BY `department`, e.last_name, e.first_name;"
+    "SELECT " +
+      "d.name AS `department`, " +
+      "e.first_name, " +
+      "e.last_name, " +
+      "r.title AS `role`, " +
+      "r.salary, " + 
+      "CONCAT(m.first_name, ' ', m.last_name) AS manager " +
+    "FROM employee AS e " + 
+      "LEFT OUTER JOIN employee AS m ON e.manager_id = m.id " +
+      "INNER JOIN `role` AS r ON e.role_id = r.id " +
+      "INNER JOIN department AS d ON r.department_id = d.id " +
+    "ORDER BY `department`, e.last_name, e.first_name;"
   connection.query(query, (err, res) => {
     if (err) throw err;
     console.table(res);
     runQuery();
   });
-}
+};
 
 const viewAllEmployeesByManager = () => {
   const query = 
-  "SELECT " +
-    "CONCAT(m.first_name, ' ', m.last_name) as manager, " +
-    "e.first_name, " +
-    "e.last_name, " +
-    "r.title AS `role`, " +
-    "r.salary, " +
-    "d.name AS `department` " +
-  "FROM employee AS e " +
-    // Had to use LEFT OUTER JOIN to also show employees with no managers ...
-    "LEFT OUTER JOIN employee AS m ON e.manager_id = m.id " +
-    "INNER JOIN `role` AS r ON e.role_id = r.id " +
-    "INNER JOIN department AS d ON r.department_id = d.id " +
-  "ORDER BY manager;"
+    "SELECT " +
+      "CONCAT(m.first_name, ' ', m.last_name) as manager, " +
+      "e.first_name, " +
+      "e.last_name, " +
+      "r.title AS `role`, " +
+      "r.salary, " +
+      "d.name AS `department` " +
+    "FROM employee AS e " +
+      // Had to use LEFT OUTER JOIN to also show employees with no managers ...
+      "LEFT OUTER JOIN employee AS m ON e.manager_id = m.id " +
+      "INNER JOIN `role` AS r ON e.role_id = r.id " +
+      "INNER JOIN department AS d ON r.department_id = d.id " +
+    "ORDER BY manager;"
   connection.query(query, (err, res) => {
     if (err) throw err;
     console.table(res);
     runQuery();
   });
-}
+};
 
 
 const updateEmployeeRole = () => {
@@ -406,5 +454,5 @@ const updateEmployeeManagerWithId = employeeId => {
       });
     });
   });
-}
+};
     
