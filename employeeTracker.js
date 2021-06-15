@@ -36,7 +36,7 @@ const runQuery = () => {
         'Update Employee Manager',
         'View All Roles',
         'Add Role',
-        // 'Remove Role',
+        'Remove Role',
         'View All Departments',
         'Add Department',
         // 'Remove Department',
@@ -71,6 +71,9 @@ const runQuery = () => {
         break;
       case 'Add Role':
         addRole();
+        break;
+      case 'Remove Role':
+        removeRole();
         break; 
       case 'View All Departments':
         viewAllDepartments();
@@ -105,24 +108,23 @@ const addRole = () => {
     `SELECT id, name FROM department`;
   connection.query(query, (err, departments) => {
     if (err) throw err;
-    inquirer
-      .prompt([
-        {
-          name: 'title',
-          type: 'input',
-          message: 'What is the title of this new role?',
-        },
-        {
-          name: 'salary',
-          type: 'number',
-          message: 'What is the salary for this role?',
-        },
-        {
-          name: 'department',
-          type: 'rawlist',
-          message: 'This role goes with which department?',
-          choices: departments.map(department => department.name),
-        }])
+    inquirer.prompt([
+      {
+        name: 'title',
+        type: 'input',
+        message: 'What is the title of this new role?',
+      },
+      {
+        name: 'salary',
+        type: 'number',
+        message: 'What is the salary for this role?',
+      },
+      {
+        name: 'department',
+        type: 'rawlist',
+        message: 'This role goes with which department?',
+        choices: departments.map(department => department.name),
+      }])
     .then(answer => {
       // Get the department id from the department name ...
       const index = departments.findIndex(department => department.name === answer.department);
@@ -138,7 +140,54 @@ const addRole = () => {
       });
     });
   });
-}
+};
+
+const removeRole = () => {
+  let query = 
+    'Select id, title FROM role';
+  connection.query(query, (err, roles) => {
+    if (err) throw err;
+    inquirer.prompt([
+      {
+        name: 'role',
+        type: 'rawlist',
+        message: 'Which role would you like to remove?',
+        choices: roles.map(role => role.title),
+      }])
+    .then(choice => {
+      const index = roles.findIndex(role => role.title === choice.role);
+      if (index < 0) throw new Error(`No roles matched: "${choice.role}"`);
+      const roleId = roles[index].id;
+      const roleTitle = roles[index].title;
+      removeRoleIfNoEmployeeWithRole(roleId, roleTitle);
+    });
+  });
+};
+
+const removeRoleIfNoEmployeeWithRole = (roleId, roleTitle) => {
+  let query = 
+    "SELECT " +
+    "CONCAT(`first_name`, ' ', `last_name`) AS full_name " +
+    "FROM employee " +
+    "INNER JOIN `role` ON employee.role_id = `role`.id " +
+    `WHERE \`role\`.id = ${roleId}`;
+  connection.query(query, (err, employeesWithRole) => {
+    if (err) throw err;
+    if (employeesWithRole.length > 0) {
+      console.log(
+        `Cannot remove because these employees have this role: "${roleTitle}"`
+      );
+      console.table(employeesWithRole);
+    } else {
+      query = 
+        `DELETE FROM \`role\` WHERE id = ${roleId}`;
+      connection.query(query, err => {
+        if (err) throw err;
+      });
+    }
+    runQuery();
+  });
+};
 
 const viewAllDepartments = () => {
   const query =
@@ -287,6 +336,7 @@ const removeEmployeeIfNotManager = (employeeId, employeeFullName) => {
       "FROM employee " +
       `WHERE manager_id = ${employeeId}`;
   connection.query(query, (err, directReports) => {
+    if (err) throw err;
     if (directReports.length > 0) {
       console.log(
         `Cannot remove because "${employeeFullName}" ` +
