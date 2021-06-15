@@ -39,7 +39,7 @@ const runQuery = () => {
         'Remove Role',
         'View All Departments',
         'Add Department',
-        // 'Remove Department',
+        'Remove Department',
         'Exit',
       ],
     })
@@ -80,6 +80,9 @@ const runQuery = () => {
         break;
       case 'Add Department':
         addDepartment();
+        break;
+      case 'Remove Department':
+        removeDepartment();
         break;
       case 'Exit':
         connection.end();
@@ -143,7 +146,7 @@ const addRole = () => {
 };
 
 const removeRole = () => {
-  let query = 
+  const query = 
     'Select id, title FROM role';
   connection.query(query, (err, roles) => {
     if (err) throw err;
@@ -159,12 +162,12 @@ const removeRole = () => {
       if (index < 0) throw new Error(`No roles matched: "${choice.role}"`);
       const roleId = roles[index].id;
       const roleTitle = roles[index].title;
-      removeRoleIfNoEmployeeWithRole(roleId, roleTitle);
+      removeRoleIfNoEmployeesHaveRole(roleId, roleTitle);
     });
   });
 };
 
-const removeRoleIfNoEmployeeWithRole = (roleId, roleTitle) => {
+const removeRoleIfNoEmployeesHaveRole = (roleId, roleTitle) => {
   let query = 
     "SELECT " +
     "CONCAT(`first_name`, ' ', `last_name`) AS full_name " +
@@ -197,7 +200,7 @@ const viewAllDepartments = () => {
     console.table(res);
     runQuery();
   })
-}
+};
 
 const addDepartment = () => {
   inquirer
@@ -214,7 +217,56 @@ const addDepartment = () => {
       runQuery();
     });
   });
-}
+};
+
+const removeDepartment = () => {
+  const query = 
+    'Select id, name FROM department';
+  connection.query(query, (err, departments) => {
+    if (err) throw err;
+    inquirer.prompt([
+      {
+        name: 'department',
+        type: 'rawlist',
+        message: 'Which department would you like to remove?',
+        choices: departments.map(department => department.name),
+      }])
+    .then(choice => {
+      const index = departments.findIndex(
+        department => department.name === choice.department
+      );
+      if (index < 0) {
+        throw new Error(
+          `No departments matched: "${choice.department}"`
+        );
+      }
+      const deptId = departments[index].id;
+      const deptName = departments[index].name;
+      removeDeptIfNoRolesHaveDept(deptId, deptName);
+    });
+  });
+};
+
+const removeDeptIfNoRolesHaveDept = (deptId, deptName) => {
+  let query = 
+    `SELECT title FROM \`role\` WHERE \`role\`.department_id = ${deptId};`
+  connection.query(query, (err, rolesWithDept) => {
+    if (err) throw err;
+    if (rolesWithDept.length > 0) {
+      console.log(
+        `Cannot remove because these roles have this department: "${deptName}"`
+      );
+      console.table(rolesWithDept);
+    } else {
+      query = 
+        `DELETE FROM department WHERE id = ${deptId}`;
+      connection.query(query, err => {
+        if (err) throw err;
+      });
+    }
+    runQuery();
+  });
+};
 
 const viewAllEmployees = () => {
   const query =
