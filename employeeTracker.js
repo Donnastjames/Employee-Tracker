@@ -28,8 +28,8 @@ const runQuery = () => {
       message: 'What would you like to do?',
       choices: [
         'View All Employees',
-        // 'View All Employees By Department',
-        // 'View All Employees By Manager',
+        'View All Employees By Department',
+        'View All Employees By Manager',
         'Add Employee',
         // 'Remove Employee',
         'Update Employee Role',
@@ -47,6 +47,12 @@ const runQuery = () => {
     switch (answer.action) {
       case 'View All Employees':
         viewAllEmployees();
+        break;
+      case 'View All Employees By Department':
+        viewAllEmployeesByDepartment();
+        break;
+      case 'View All Employees By Manager':
+        viewAllEmployeesByManager();
         break;
       case 'Add Employee':
         addEmployee();
@@ -80,7 +86,10 @@ const runQuery = () => {
 
 const viewAllRoles = () => {
   const query =
-    'SELECT * FROM `role`';
+    "SELECT title, salary, department_id " +
+    "FROM `role` " +
+      "INNER JOIN department ON role.department_id = department.id " +
+    "ORDER BY `title`;"
   connection.query(query, (err, res) => {
     if (err) throw err;
     console.table(res);
@@ -130,7 +139,7 @@ const addRole = () => {
 
 const viewAllDepartments = () => {
   const query =
-    `SELECT * FROM department`;
+    `SELECT name FROM department ORDER BY name`;
   connection.query(query, (err, res) => {
     if (err) throw err;
     console.table(res);
@@ -168,7 +177,8 @@ const viewAllEmployees = () => {
       // Had to use LEFT OUTER JOIN to also show employees with no managers ...
       "LEFT OUTER JOIN employee AS m ON e.manager_id = m.id " +
       "INNER JOIN `role` AS r ON e.role_id = r.id " +
-      "INNER JOIN department AS d ON r.department_id = d.id;"
+      "INNER JOIN department AS d ON r.department_id = d.id " +
+    "ORDER BY e.last_name, e.first_name;"
   connection.query(query, (err, res) => {
     if (err) throw err;
     console.table(res);
@@ -244,6 +254,50 @@ const addEmployeeWithNameAndRoleId = (firstName, lastName, roleId) => {
     });
   });
 }
+
+const viewAllEmployeesByDepartment = () => {
+  const query = 
+  "SELECT " +
+    "d.name AS `department`, " +
+    "e.first_name, " +
+    "e.last_name, " +
+    "r.title AS `role`, " +
+    "r.salary, " + 
+    "CONCAT(m.first_name, ' ', m.last_name) AS manager " +
+  "FROM employee AS e " + 
+    "LEFT OUTER JOIN employee AS m ON e.manager_id = m.id " +
+    "INNER JOIN `role` AS r ON e.role_id = r.id " +
+    "INNER JOIN department AS d ON r.department_id = d.id " +
+  "ORDER BY `department`, e.last_name, e.first_name;"
+  connection.query(query, (err, res) => {
+    if (err) throw err;
+    console.table(res);
+    runQuery();
+  });
+}
+
+const viewAllEmployeesByManager = () => {
+  const query = 
+  "SELECT " +
+    "CONCAT(m.first_name, ' ', m.last_name) as manager, " +
+    "e.first_name, " +
+    "e.last_name, " +
+    "r.title AS `role`, " +
+    "r.salary, " +
+    "d.name AS `department` " +
+  "FROM employee AS e " +
+    // Had to use LEFT OUTER JOIN to also show employees with no managers ...
+    "LEFT OUTER JOIN employee AS m ON e.manager_id = m.id " +
+    "INNER JOIN `role` AS r ON e.role_id = r.id " +
+    "INNER JOIN department AS d ON r.department_id = d.id " +
+  "ORDER BY manager;"
+  connection.query(query, (err, res) => {
+    if (err) throw err;
+    console.table(res);
+    runQuery();
+  });
+}
+
 
 const updateEmployeeRole = () => {
   let query =
@@ -353,34 +407,4 @@ const updateEmployeeManagerWithId = employeeId => {
     });
   });
 }
-
-
-const getManagers = () => {
-  const choices = employeeDB.managerSearch();
-  console.log(choices);
-  return managerSearch((err,res) => {
-    inquirer
-      .prompt(
-        {
-        name: 'manager_id',
-        type: 'rawlist',
-        message: `Please select the employee's manager from the list: `,
-        choices: choices,
-        }
-      ).then(({manager_id}) => {
-        console.table(manager_id);
-        res();
-      });
-      
-      getManagers();
-  });
-}
-    // .then(answer => {
-    //   const insert = `INSERT INTO employee VALUES ("${answer.firstName}", "${answer}")`;
-    //   connection.query(insert, (err, res) => {
-    //     if (err) throw err;
-
-    //   })
-        
-      
     
