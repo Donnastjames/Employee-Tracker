@@ -40,6 +40,7 @@ const runQuery = () => {
         'View All Departments',
         'Add Department',
         'Remove Department',
+        'View Total Budget By Department',
         'Exit',
       ],
     })
@@ -83,6 +84,9 @@ const runQuery = () => {
         break;
       case 'Remove Department':
         removeDepartment();
+        break;
+      case 'View Total Budget By Department':
+        viewTotalBudgetByDept();
         break;
       case 'Exit':
         connection.end();
@@ -264,6 +268,22 @@ const removeDeptIfNoRolesHaveDept = (deptId, deptName) => {
         if (err) throw err;
       });
     }
+    runQuery();
+  });
+};
+
+const viewTotalBudgetByDept = () => {
+  const query =
+    "SELECT " +
+      "d.name as department, " +
+      "SUM(r.salary) as total_dept_salary " +
+    "FROM employee AS e " +
+      "INNER JOIN `role` AS r ON e.role_id = r.id " +
+      "INNER JOIN department AS d ON r.department_id = d.id " +
+    "GROUP BY d.name;";
+  connection.query(query, (err, budgets) => {
+    if (err) throw err;
+    console.table(budgets);
     runQuery();
   });
 };
