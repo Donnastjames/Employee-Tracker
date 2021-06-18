@@ -28,6 +28,8 @@ The user can add, view, update or delete an employee name, department or role.  
 
 ## Mock up
 
-Link to application in use:
+![Screen shot of application](./assets/MySQL_EmployeeTracker.png)
+
+Link to video of application in use:
 https://drive.google.com/file/d/1AixTWtHxenq8KbC3s909aJda_nyEUrpy/view
 
