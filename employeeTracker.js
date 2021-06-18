@@ -1,8 +1,5 @@
 const mysql = require('mysql');
 const inquirer = require('inquirer');
-const Employee = require('./lib/employee');
-const Role = require('./lib/role');
-const Department = require('./lib/department');
 
 const connection = mysql.createConnection({
   host: 'localhost',
