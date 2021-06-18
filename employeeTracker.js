@@ -331,14 +331,6 @@ const addEmployee = () => {
         type: 'rawlist',
         message: `What is the employee's role?`,
         choices: roles.map(role => role.title),
-          // 'Sales Lead',
-          // 'Sales Person',
-          // 'Lead Engineer',
-          // 'Software Engineer',
-          // 'Account Manager',
-          // 'Accountant',
-          // 'Legal Team Lead',
-          // 'Lawyer',
       }])
     .then(answer => {
       // Get the role id from the role name ...
